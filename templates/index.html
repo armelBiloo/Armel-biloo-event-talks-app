@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>BigQuery Release Pulse | Live Notes & Tweet Generator</title>
-  <meta name="description" content="Stay updated with Google Cloud BigQuery release notes. Filter, search, and instantly tweet BigQuery updates.">
+  <meta name="description" content="Stay updated with Google Cloud BigQuery release notes. Filter, search, copy to clipboard, export CSV, and instantly tweet BigQuery updates.">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
@@ -34,6 +34,15 @@
             <span class="status-dot"></span>
             <span class="status-text" id="statusText">Feed Ready</span>
           </div>
+
+          <button id="exportCsvBtn" class="btn btn-secondary" title="Exporter toutes les notes de version au format CSV">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+              <polyline points="7 10 12 15 17 10"></polyline>
+              <line x1="12" y1="15" x2="12" y2="3"></line>
+            </svg>
+            <span>Exporter CSV</span>
+          </button>
 
           <button id="refreshBtn" class="btn btn-primary" title="Fetch latest release notes from Google Cloud">
             <svg id="refreshSpinner" class="icon icon-spin-active" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
@@ -110,20 +119,23 @@
         </div>
       </section>
 
-      <!-- Selected Banner & Multi-Tweet Toolbar -->
+      <!-- Selected Banner & Multi-Action Toolbar -->
       <div id="selectionBanner" class="selection-banner hidden">
         <div class="selection-info">
           <span class="selection-badge">✓ Selected</span>
           <span id="selectedItemTitle" class="selection-text">1 update selected</span>
         </div>
         <div class="selection-actions">
-          <button id="tweetSelectedBtn" class="btn btn-accent">
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
+          <button id="copySelectedBtn" class="btn btn-secondary btn-sm">
+            📋 Copier la fiche
+          </button>
+          <button id="tweetSelectedBtn" class="btn btn-accent btn-sm">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
               <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/>
             </svg>
-            Tweet Selected Update
+            Tweet Update
           </button>
-          <button id="clearSelectionBtn" class="btn btn-ghost btn-sm">Clear Selection</button>
+          <button id="clearSelectionBtn" class="btn btn-ghost btn-sm">Clear</button>
         </div>
       </div>
 
@@ -132,7 +144,7 @@
         <div id="loadingState" class="state-container">
           <div class="spinner-large"></div>
           <h3>Fetching BigQuery Release Notes...</h3>
-          <p>Connecting to Google Cloud feed feed XML...</p>
+          <p>Connecting to Google Cloud feed XML...</p>
         </div>
 
         <div id="errorState" class="state-container hidden">

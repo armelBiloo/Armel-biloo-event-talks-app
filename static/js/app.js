@@ -23,6 +23,7 @@ document.addEventListener('DOMContentLoaded', () => {
   const refreshBtn = document.getElementById('refreshBtn');
   const refreshBtnText = document.getElementById('refreshBtnText');
   const refreshSpinner = document.getElementById('refreshSpinner');
+  const exportCsvBtn = document.getElementById('exportCsvBtn');
   const feedStatus = document.getElementById('feedStatus');
   const statusText = document.getElementById('statusText');
   
@@ -38,6 +39,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
   const selectionBanner = document.getElementById('selectionBanner');
   const selectedItemTitle = document.getElementById('selectedItemTitle');
+  const copySelectedBtn = document.getElementById('copySelectedBtn');
   const tweetSelectedBtn = document.getElementById('tweetSelectedBtn');
   const clearSelectionBtn = document.getElementById('clearSelectionBtn');
 
@@ -80,6 +82,11 @@ document.addEventListener('DOMContentLoaded', () => {
       if (!state.isRefreshing) {
         fetchNotes(true);
       }
+    });
+
+    // Export CSV button click
+    exportCsvBtn.addEventListener('click', () => {
+      exportNotesToCsv();
     });
 
     // Search input
@@ -125,6 +132,14 @@ document.addEventListener('DOMContentLoaded', () => {
       state.selectedItemId = null;
       updateSelectionBanner();
       renderFeed();
+    });
+
+    copySelectedBtn.addEventListener('click', () => {
+      if (!state.selectedItemId) return;
+      const found = findItemById(state.selectedItemId);
+      if (found) {
+        copyCardToClipboard(found.item, found.entry);
+      }
     });
 
     tweetSelectedBtn.addEventListener('click', () => {
@@ -192,9 +207,9 @@ document.addEventListener('DOMContentLoaded', () => {
     copyTweetTextBtn.addEventListener('click', () => {
       const text = tweetTextArea.value;
       navigator.clipboard.writeText(text).then(() => {
-        showToast('Tweet text copied to clipboard! 📋', 'success');
+        showToast('Texte du tweet copié dans le presse-papiers ! 📋', 'success');
       }).catch(() => {
-        showToast('Failed to copy text', 'error');
+        showToast('Erreur lors de la copie', 'error');
       });
     });
 
@@ -202,7 +217,7 @@ document.addEventListener('DOMContentLoaded', () => {
     postToTwitterBtn.addEventListener('click', () => {
       const text = tweetTextArea.value.trim();
       if (!text) {
-        showToast('Please enter tweet content', 'error');
+        showToast('Veuillez saisir un texte pour le tweet', 'error');
         return;
       }
 
@@ -219,18 +234,50 @@ document.addEventListener('DOMContentLoaded', () => {
       .then(data => {
         if (data.success) {
           window.open(data.intent_url, 'tweetWindow', 'width=560,height=480,resizable=yes');
-          showToast('Opening Twitter / X share window... 🚀', 'success');
+          showToast('Ouverture de la fenêtre de partage Twitter / X... 🚀', 'success');
           closeTweetModal();
         } else {
-          showToast(data.error || 'Failed to generate tweet', 'error');
+          showToast(data.error || 'Échec de la génération du tweet', 'error');
         }
       })
       .catch(() => {
-        // Fallback directly to intent URL
         const encoded = encodeURIComponent(text);
         window.open(`https://twitter.com/intent/tweet?text=${encoded}`, 'tweetWindow', 'width=560,height=480');
         closeTweetModal();
       });
+    });
+  }
+
+  // Export release notes to CSV file
+  function exportNotesToCsv() {
+    if (!state.feedData || !state.feedData.entries) {
+      showToast('Aucune donnée à exporter', 'error');
+      return;
+    }
+
+    // Direct browser download from backend endpoint for full CSV
+    window.location.href = '/api/notes/export/csv';
+    showToast('Exportation du fichier CSV en cours... 📊', 'success');
+  }
+
+  // Copy card details to clipboard helper
+  function copyCardToClipboard(item, entry, buttonEl = null) {
+    const textToCopy = `📌 BigQuery Release Note (${entry.date})\n----------------------------------------\nCategory: ${item.category}\nSummary: ${item.summary}\nFull Detail: ${item.text}\nDocumentation Link: ${entry.link}`;
+
+    navigator.clipboard.writeText(textToCopy).then(() => {
+      showToast('Fiche copiée dans le presse-papiers ! 📋', 'success');
+      if (buttonEl) {
+        const originalHtml = buttonEl.innerHTML;
+        buttonEl.innerHTML = `✓ Copié !`;
+        buttonEl.style.color = '#34d399';
+        setTimeout(() => {
+          buttonEl.innerHTML = originalHtml;
+          buttonEl.style.color = '';
+        }, 2000);
+      }
+    }).catch(err => {
+      console.error('Clipboard copy error:', err);
+      showToast('Impossible de copier dans le presse-papiers', 'error');
     });
   }
 
@@ -264,7 +311,7 @@ document.addEventListener('DOMContentLoaded', () => {
         statusText.textContent = `Live Feed • ${state.feedData.total_items} Updates`;
         
         if (forceRefresh) {
-          showToast(`Feed refreshed! Loaded ${state.feedData.total_items} release updates.`, 'success');
+          showToast(`Flux rafraîchi ! ${state.feedData.total_items} mises à jour chargées.`, 'success');
         }
       })
       .catch(err => {
@@ -273,7 +320,7 @@ document.addEventListener('DOMContentLoaded', () => {
           errorMessage.textContent = err.message || 'Unable to fetch BigQuery release notes RSS feed.';
           showState('error');
         } else {
-          showToast(`Refresh failed: ${err.message}`, 'error');
+          showToast(`Échec du rafraîchissement: ${err.message}`, 'error');
         }
         statusText.textContent = 'Feed Error';
       })
@@ -301,7 +348,6 @@ document.addEventListener('DOMContentLoaded', () => {
     let totalMatchedItems = 0;
 
     state.feedData.entries.forEach(entry => {
-      // Filter items in entry by category & search query
       const matchingItems = entry.items.filter(item => {
         const matchesCategory = state.activeCategory === 'ALL' || item.category === state.activeCategory;
         const query = state.searchQuery;
@@ -317,7 +363,6 @@ document.addEventListener('DOMContentLoaded', () => {
       if (matchingItems.length > 0) {
         totalMatchedItems += matchingItems.length;
 
-        // Create Date Group Container
         const groupEl = document.createElement('div');
         groupEl.className = 'date-group';
 
@@ -334,7 +379,6 @@ document.addEventListener('DOMContentLoaded', () => {
         `;
         groupEl.appendChild(headerEl);
 
-        // Render each note card
         matchingItems.forEach(item => {
           const cardEl = createNoteCard(entry, item);
           groupEl.appendChild(cardEl);
@@ -376,16 +420,16 @@ document.addEventListener('DOMContentLoaded', () => {
       </div>
 
       <div class="card-footer">
-        <a href="${entry.link}" target="_blank" rel="noopener noreferrer" class="btn btn-ghost btn-sm" title="View official Google Cloud Release Notes">
+        <a href="${entry.link}" target="_blank" rel="noopener noreferrer" class="btn btn-ghost btn-sm" title="Voir la documentation officielle Google Cloud">
           Docs Link ↗
         </a>
         <div class="card-actions">
-          <button class="btn btn-secondary btn-sm copy-summary-btn" title="Copy update text & link">
+          <button class="btn btn-secondary btn-sm copy-summary-btn" title="Copier la fiche dans le presse-papiers">
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
               <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
               <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
             </svg>
-            Copy
+            Copier
           </button>
           <button class="btn btn-accent btn-sm tweet-card-btn">
             <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor">
@@ -413,10 +457,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const copyBtn = card.querySelector('.copy-summary-btn');
     copyBtn.addEventListener('click', (e) => {
       e.stopPropagation();
-      const copyText = `BigQuery Update (${entry.date}) - ${item.category}: ${item.summary}\nLink: ${entry.link}`;
-      navigator.clipboard.writeText(copyText).then(() => {
-        showToast('Copied update details to clipboard! 📋', 'success');
-      });
+      copyCardToClipboard(item, entry, copyBtn);
     });
 
     const tweetBtn = card.querySelector('.tweet-card-btn');
@@ -509,11 +550,9 @@ document.addEventListener('DOMContentLoaded', () => {
     } else if (style === 'tech') {
       draft = `📊 BigQuery Release Note (${dateStr})\n• ${item.category}: ${summary}\n\nDoc: ${linkStr}`;
     } else {
-      // Custom: preserve whatever user typed or reset to summary if empty
       draft = tweetTextArea.value || `${summary}\n${linkStr}`;
     }
 
-    // Append Hashtags if active
     if (state.tweetModal.hashtags.size > 0) {
       const tagsStr = Array.from(state.tweetModal.hashtags).map(t => `#${t}`).join(' ');
       draft = `${draft}\n\n${tagsStr}`;

@@ -1,10 +1,12 @@
 import datetime
+import io
+import csv
 import re
 import urllib.request
 import urllib.parse
 import xml.etree.ElementTree as ET
 from bs4 import BeautifulSoup
-from flask import Flask, jsonify, render_template, request
+from flask import Flask, jsonify, render_template, request, Response
 
 app = Flask(__name__)
 
@@ -122,7 +124,6 @@ def fetch_feed_data(force=False):
                 cat_raw = h.get_text().strip()
                 cat_clean = cat_raw if cat_raw in category_counts else "General"
                 
-                # Gather content siblings up to next heading
                 sibling_html_parts = []
                 curr = h.next_sibling
                 while curr and curr.name not in ['h2', 'h3', 'h4']:
@@ -135,7 +136,6 @@ def fetch_feed_data(force=False):
                 
                 item_text_clean = re.sub(r'\s+', ' ', item_text)
                 
-                # Create concise summary
                 sentences = re.split(r'(?<=[.!?]) +', item_text_clean)
                 summary = sentences[0] if sentences else item_text_clean
                 if len(summary) > 200:
@@ -221,6 +221,39 @@ def get_notes():
     try:
         data = fetch_feed_data(force=force_refresh)
         return jsonify({"success": True, "data": data})
+    except Exception as e:
+        return jsonify({"success": False, "error": str(e)}), 500
+
+@app.route('/api/notes/export/csv', methods=['GET'])
+def export_csv():
+    """Export all release notes to a CSV file with UTF-8 BOM encoding."""
+    try:
+        data = fetch_feed_data(force=False)
+        output = io.StringIO()
+        writer = csv.writer(output, quoting=csv.QUOTE_MINIMAL)
+        writer.writerow(['Date', 'Category', 'Summary', 'Full_Text', 'Documentation_Link', 'Update_ID'])
+        
+        for entry in data.get('entries', []):
+            date_str = entry.get('date', '')
+            link = entry.get('link', '')
+            for item in entry.get('items', []):
+                writer.writerow([
+                    date_str,
+                    item.get('category', ''),
+                    item.get('summary', ''),
+                    item.get('text', ''),
+                    link,
+                    item.get('id', '')
+                ])
+                
+        csv_data = output.getvalue()
+        today_str = datetime.datetime.now().strftime("%Y-%m-%d")
+        
+        return Response(
+            '\ufeff' + csv_data,
+            mimetype='text/csv; charset=utf-8',
+            headers={"Content-Disposition": f"attachment; filename=bigquery-release-notes-{today_str}.csv"}
+        )
     except Exception as e:
         return jsonify({"success": False, "error": str(e)}), 500
 
