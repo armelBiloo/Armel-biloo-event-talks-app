@@ -10,6 +10,7 @@ document.addEventListener('DOMContentLoaded', () => {
     searchQuery: '',
     selectedItemId: null,
     isRefreshing: false,
+    theme: localStorage.getItem('theme') || 'dark',
     tweetModal: {
       item: null,
       entryDate: '',
@@ -20,6 +21,10 @@ document.addEventListener('DOMContentLoaded', () => {
   };
 
   // DOM Elements
+  const themeToggleBtn = document.getElementById('themeToggleBtn');
+  const themeToggleIcon = document.getElementById('themeToggleIcon');
+  const themeToggleText = document.getElementById('themeToggleText');
+
   const refreshBtn = document.getElementById('refreshBtn');
   const refreshBtnText = document.getElementById('refreshBtnText');
   const refreshSpinner = document.getElementById('refreshSpinner');
@@ -72,11 +77,33 @@ document.addEventListener('DOMContentLoaded', () => {
   init();
 
   function init() {
+    applyTheme(state.theme);
     bindEvents();
     fetchNotes(false);
   }
 
+  function applyTheme(theme) {
+    state.theme = theme;
+    document.documentElement.setAttribute('data-theme', theme);
+    localStorage.setItem('theme', theme);
+
+    if (theme === 'light') {
+      themeToggleIcon.textContent = '☀️';
+      themeToggleText.textContent = 'Mode Sombre';
+    } else {
+      themeToggleIcon.textContent = '🌙';
+      themeToggleText.textContent = 'Mode Clair';
+    }
+  }
+
   function bindEvents() {
+    // Theme Toggle Button
+    themeToggleBtn.addEventListener('click', () => {
+      const nextTheme = state.theme === 'dark' ? 'light' : 'dark';
+      applyTheme(nextTheme);
+      showToast(`Passage au ${nextTheme === 'light' ? 'Mode Clair ☀️' : 'Mode Sombre 🌙'}`, 'success');
+    });
+
     // Refresh button click
     refreshBtn.addEventListener('click', () => {
       if (!state.isRefreshing) {
@@ -255,7 +282,6 @@ document.addEventListener('DOMContentLoaded', () => {
       return;
     }
 
-    // Direct browser download from backend endpoint for full CSV
     window.location.href = '/api/notes/export/csv';
     showToast('Exportation du fichier CSV en cours... 📊', 'success');
   }

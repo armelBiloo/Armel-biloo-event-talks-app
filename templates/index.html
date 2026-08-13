@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>BigQuery Release Pulse | Live Notes & Tweet Generator</title>
-  <meta name="description" content="Stay updated with Google Cloud BigQuery release notes. Filter, search, copy to clipboard, export CSV, and instantly tweet BigQuery updates.">
+  <meta name="description" content="Stay updated with Google Cloud BigQuery release notes. Filter, search, copy to clipboard, export CSV, dark/light theme, and instantly tweet BigQuery updates.">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
@@ -34,6 +34,12 @@
             <span class="status-dot"></span>
             <span class="status-text" id="statusText">Feed Ready</span>
           </div>
+
+          <!-- Theme Toggle Button -->
+          <button id="themeToggleBtn" class="theme-toggle-btn" title="Changer le thème (Sombre / Clair)">
+            <span id="themeToggleIcon">🌙</span>
+            <span id="themeToggleText">Mode Clair</span>
+          </button>
 
           <button id="exportCsvBtn" class="btn btn-secondary" title="Exporter toutes les notes de version au format CSV">
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
